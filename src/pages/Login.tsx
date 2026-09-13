@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { signInWithGoogle } from '../lib/auth';
 import PageTransition from '../components/PageTransition';
-import ThemeToggle from '../components/ThemeToggle';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -30,10 +29,6 @@ export default function Login() {
             opacity: 0.8
           }}
         />
-        
-        <div className="absolute top-6 right-6 z-50">
-          <ThemeToggle />
-        </div>
 
         <main className="relative z-10 w-full max-w-md px-6">
           <div className="flex flex-col items-center mb-12 text-center">

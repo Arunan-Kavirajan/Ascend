@@ -4,9 +4,19 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AnimatePresence } from "framer-motion";
 
 import { auth } from "./lib/firebase";
-import { ThemeProvider } from "./context/ThemeContext";
-import { UserProvider } from "./context/UserContext";
+import { UserProvider, useUser } from "./context/UserContext";
 import { SessionProvider } from "./context/SessionContext";
+
+function ThemeSync() {
+  const { profile } = useUser();
+
+  useEffect(() => {
+    const theme = profile?.equipped?.theme || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [profile?.equipped?.theme]);
+
+  return null;
+}
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -16,6 +26,8 @@ import Sessions from "./pages/Sessions";
 import Leaderboard from "./pages/Leaderboard";
 import Achievements from "./pages/Achievements";
 import Store from "./pages/Store";
+import Profile from "./pages/Profile";
+import Cohorts from "./pages/Cohorts";
 
 function AppRoutes({ user }: { user: User | null }) {
   const location = useLocation();
@@ -32,6 +44,9 @@ function AppRoutes({ user }: { user: User | null }) {
         <Route path="/leaderboard" element={user ? <Leaderboard /> : <Navigate to="/login" />} />
         <Route path="/achievements" element={user ? <Achievements /> : <Navigate to="/login" />} />
         <Route path="/store" element={user ? <Store /> : <Navigate to="/login" />} />
+        <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+        <Route path="/profile/:userId" element={user ? <Profile /> : <Navigate to="/login" />} />
+        <Route path="/cohorts" element={user ? <Cohorts /> : <Navigate to="/login" />} />
         
         <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>
@@ -55,16 +70,17 @@ function App() {
   }
 
   return (
-    <ThemeProvider>
+    <>
       <div className="noise-overlay"></div>
       <BrowserRouter>
         <UserProvider>
+          <ThemeSync />
           <SessionProvider>
             <AppRoutes user={user} />
           </SessionProvider>
         </UserProvider>
       </BrowserRouter>
-    </ThemeProvider>
+    </>
   );
 }
 

@@ -2,7 +2,6 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { auth } from '../lib/firebase';
 import { logout } from '../lib/auth';
-import ThemeToggle from './ThemeToggle';
 import { useUser, getTodayString } from '../context/UserContext';
 
 const NAV_ITEMS = [
@@ -10,8 +9,10 @@ const NAV_ITEMS = [
   { path: '/sessions', label: 'Sessions' },
   { path: '/sessions/new', label: 'Focus' },
   { path: '/leaderboard', label: 'Leaderboard' },
+  { path: '/cohorts', label: 'Cohorts' },
   { path: '/achievements', label: 'Achievements' },
-  { path: '/store', label: 'Store' }
+  { path: '/store', label: 'Store' },
+  { path: '/profile', label: 'Profile' }
 ];
 
 export default function Sidebar() {
@@ -59,27 +60,28 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
           return (
             <NavLink
               key={item.path}
               to={item.path}
-              className="relative flex items-center px-4 py-2 outline-none group"
+              className="relative flex items-center px-4 py-2.5 outline-none group transition-all duration-200"
             >
               {isActive && (
                 <motion.div
                   layoutId="activeNavDot"
-                  className="absolute left-0 w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: 'var(--accent-indigo)' }}
+                  className="absolute left-0 w-1 h-4 rounded-r"
+                  style={{ backgroundColor: 'var(--accent)' }}
                   initial={false}
                   transition={{ duration: 0.2 }}
                 />
               )}
               <span 
-                className="text-sm font-medium transition-colors"
-                style={{
-                  color: isActive ? 'var(--text-primary)' : 'var(--text-muted)'
-                }}
+                className={`text-sm tracking-wide transition-all duration-200 group-hover:translate-x-1 ${
+                  isActive 
+                    ? 'font-medium text-[var(--text-primary)]' 
+                    : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'
+                }`}
               >
                 {item.label}
               </span>
@@ -91,40 +93,54 @@ export default function Sidebar() {
       {/* Footer section */}
       <div className="p-8 flex flex-col gap-6">
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-              {user?.displayName || 'User'}
-            </p>
-            <p className="text-xs font-mono font-bold" style={{ color: 'var(--text-primary)' }}>
-              LVL {currentLevel}
-            </p>
-          </div>
-          
-          <div className="h-1 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-            <motion.div 
-              className="h-full rounded-full"
-              style={{ backgroundColor: 'var(--accent)' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-            />
-          </div>
+          <button 
+            onClick={() => navigate('/profile')}
+            className="flex flex-col gap-3 text-left hover:opacity-80 transition-opacity focus:outline-none w-full"
+          >
+            <div className="w-full">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                  {user?.displayName || 'User'}
+                </p>
+                <p className="text-xs font-mono font-bold" style={{ color: 'var(--text-primary)' }}>
+                  LVL {currentLevel}
+                </p>
+              </div>
+              {profile?.equipped?.title && (
+                <p className="text-[10px] font-mono tracking-widest uppercase mt-0.5" style={{ color: 'var(--accent)' }}>
+                  {profile.equipped.title.replace('title-', '').replace('-', ' ')}
+                </p>
+              )}
+            </div>
+            
+            <div className="h-1 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+              <motion.div 
+                className="h-full rounded-full"
+                style={{ backgroundColor: 'var(--accent)' }}
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              />
+            </div>
 
-          <div className="flex items-center justify-between text-xs font-mono">
-            <span style={{ color: 'var(--text-secondary)' }}>{profile?.ap || 0} AP</span>
-            <span style={{ color: streakColor }}>🔥 {profile?.currentStreak || 0}</span>
-          </div>
+            <div className="flex items-center justify-between text-xs font-mono w-full">
+              <span style={{ color: 'var(--text-secondary)' }}>{profile?.ap || 0} AP</span>
+              <div className="flex items-center gap-3">
+                {(profile?.streakShields || 0) > 0 && (
+                  <span title="Streak Shields" style={{ color: 'var(--text-secondary)' }}>🛡️ {profile?.streakShields}</span>
+                )}
+                <span style={{ color: streakColor }}>🔥 {profile?.currentStreak || 0}</span>
+              </div>
+            </div>
+          </button>
 
           <button
             onClick={handleLogout}
-            className="text-xs text-left w-fit transition-colors hover:underline mt-1"
+            className="text-xs text-left w-fit transition-all duration-200 hover:text-[var(--text-primary)] hover:underline mt-1 cursor-pointer"
             style={{ color: 'var(--text-muted)' }}
           >
             Logout
           </button>
-        </div>
-        <div>
-          <ThemeToggle />
         </div>
       </div>
     </aside>

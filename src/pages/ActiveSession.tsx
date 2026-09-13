@@ -14,7 +14,7 @@ const LONG_BREAK_DURATION = 15 * 60; // 15 minutes in seconds
 export default function ActiveSession() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
-  const { getSession, updateSession } = useSessions();
+  const { getSession, updateSession, sessions } = useSessions();
   const { awardSession } = useUser();
   const session = sessionId ? getSession(sessionId) : undefined;
 
@@ -57,6 +57,20 @@ export default function ActiveSession() {
     setTasks(session.tasks);
     setCompletedPomodoros(session.completedPomodoros);
   }, [session?.id]);
+
+  const { updateFocusStatus } = useUser();
+  
+  useEffect(() => {
+    // Only mark as focusing if the timer is actually running AND we are not on a break.
+    // If we want breaks to count as "in a session", we can just use `isRunning`.
+    // Let's use `isRunning` so friends know they are in a session.
+    updateFocusStatus(isRunning);
+    
+    return () => {
+      // Cleanup: if they leave the page entirely, mark as false.
+      updateFocusStatus(false);
+    }
+  }, [isRunning, updateFocusStatus]);
 
   // Request notification permission on first start
   useEffect(() => {
@@ -268,7 +282,7 @@ export default function ActiveSession() {
       if (session.status !== "completed") {
         const totalFocusMinutes = Math.floor(sessionFocusTime / 60);
         const completedTasksCount = tasks.filter((task) => task.completed).length;
-        report = await awardSession(totalFocusMinutes, completedTasksCount);
+        report = await awardSession(totalFocusMinutes, completedTasksCount, sessions);
       }
 
       await updateSession(session.id, {
