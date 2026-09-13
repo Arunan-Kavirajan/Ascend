@@ -107,7 +107,7 @@ export default function Cohorts() {
       <div className="min-h-screen flex bg-[var(--bg-primary)] font-sans text-[var(--text-primary)]">
         <Sidebar />
         
-        <main className="flex-1 ml-64 p-12 overflow-y-auto">
+        <main className="flex-1 md:ml-64 p-4 md:p-12 pt-24 md:pt-12 overflow-y-auto">
           <div className="max-w-5xl mx-auto">
             <div className="flex justify-between items-end border-b border-[var(--border)] pb-8 mb-12">
               <div>
@@ -189,15 +189,15 @@ export default function Cohorts() {
 
                     {/* Internal Leaderboard */}
                     <div className="border border-[var(--border)] bg-[var(--surface-1)]">
-                      <div className="grid grid-cols-[60px_1fr_120px_140px] gap-4 p-4 border-b border-[var(--border)] text-xs font-mono uppercase tracking-widest text-[var(--text-muted)]">
+                      <div className="grid grid-cols-[40px_1fr_80px] md:grid-cols-[60px_1fr_120px_140px] gap-2 md:gap-4 p-4 border-b border-[var(--border)] text-xs font-mono uppercase tracking-widest text-[var(--text-muted)]">
                         <div className="text-center">Rank</div>
                         <div>Operative</div>
-                        <div className="text-right">Level</div>
-                        <div className="text-right">Total Focus</div>
+                        <div className="text-right hidden md:block">Level</div>
+                        <div className="text-right">Score</div>
                       </div>
                       
                       {members.map((member, idx) => (
-                        <div key={member.uid} className="grid grid-cols-[60px_1fr_120px_140px] gap-4 p-4 border-b border-[var(--border)] last:border-0 items-center">
+                        <div key={member.uid} className="grid grid-cols-[40px_1fr_80px] md:grid-cols-[60px_1fr_120px_140px] gap-2 md:gap-4 p-4 border-b border-[var(--border)] last:border-0 items-center">
                           <div className="text-center font-mono font-bold text-[var(--text-muted)]">
                             {idx + 1}
                           </div>
@@ -223,11 +223,11 @@ export default function Cohorts() {
                               )}
                             </div>
                           </div>
-                          <div className="text-right font-mono text-sm">
+                          <div className="text-right font-mono text-sm hidden md:block">
                             Lv. {member.level}
                           </div>
                           <div className="text-right font-mono text-sm text-[var(--text-primary)]">
-                            {Math.floor((member.totalFocusMinutes || 0) / 60)}h {(member.totalFocusMinutes || 0) % 60}m
+                            {Math.floor((member.totalFocusMinutes || 0) / 60)}h <span className="hidden md:inline">{(member.totalFocusMinutes || 0) % 60}m</span>
                           </div>
                         </div>
                       ))}

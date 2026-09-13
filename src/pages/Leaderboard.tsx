@@ -97,7 +97,7 @@ export default function Leaderboard() {
     <PageTransition>
       <div className="min-h-screen flex bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans relative">
         <Sidebar />
-        <main className="flex-1 ml-60 min-h-screen p-12 pb-32"> {/* pb-32 to account for fixed HUD */}
+        <main className="flex-1 md:ml-60 min-h-screen p-4 md:p-12 pb-32 pt-24 md:pt-12"> {/* pb-32 to account for fixed HUD */}
           <div className="max-w-5xl mx-auto">
             <header className="mb-12">
               <h1 className="text-4xl font-normal tracking-wide mb-2 uppercase">Leaderboard Arena</h1>
@@ -106,7 +106,7 @@ export default function Leaderboard() {
               </p>
             </header>
 
-            <div className="flex space-x-8 mb-12 border-b border-[var(--border)]">
+            <div className="flex space-x-6 md:space-x-8 mb-12 border-b border-[var(--border)] overflow-x-auto whitespace-nowrap scrollbar-hide">
               <button
                 onClick={() => setTab('all-time')}
                 className={`pb-4 text-sm font-mono uppercase tracking-widest transition-colors ${
@@ -305,7 +305,7 @@ export default function Leaderboard() {
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
-              className="fixed bottom-0 left-60 right-0 border-t border-white/20 bg-black/90 backdrop-blur-md z-40 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
+              className="fixed bottom-0 left-0 md:left-60 right-0 border-t border-white/20 bg-black/90 backdrop-blur-md z-40 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
             >
               <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-6">

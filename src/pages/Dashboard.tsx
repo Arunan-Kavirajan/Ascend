@@ -104,9 +104,9 @@ export default function Dashboard() {
       <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Sidebar />
         
-        <main className="flex-1 ml-60 relative overflow-y-auto">
+        <main className="flex-1 md:ml-60 relative overflow-y-auto">
           
-          <div className="relative z-10 max-w-5xl mx-auto p-12">
+          <div className="relative z-10 max-w-5xl mx-auto p-4 md:p-12 pt-24 md:pt-12">
             
             {/* Header */}
             <motion.header 

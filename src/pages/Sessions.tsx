@@ -95,8 +95,8 @@ export default function Sessions() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Sidebar />
       <PageTransition>
-        <main className="ml-60 min-h-screen px-12 py-16">
-          <div className="mx-auto max-w-5xl">
+        <main className="md:ml-60 min-h-screen px-4 py-8 md:px-12 md:py-16 pt-24 md:pt-16">
+          <div className="max-w-4xl mx-auto">
             <div className="flex items-end justify-between mb-16">
               <div>
                 <p className="text-xs uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>

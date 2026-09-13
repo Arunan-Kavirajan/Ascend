@@ -36,8 +36,8 @@ export default function CreateSession() {
     <div className="min-h-screen text-[var(--text-primary)]" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Sidebar />
       <PageTransition>
-        <main className="ml-60 min-h-screen px-12 py-16">
-          <div className="mx-auto max-w-2xl">
+        <main className="md:ml-60 min-h-screen px-4 py-8 md:px-12 md:py-16 pt-24 md:pt-16">
+          <div className="max-w-xl mx-auto">
             <button
               onClick={() => navigate("/sessions")}
               className="text-xs uppercase tracking-widest font-semibold hover:underline mb-12"

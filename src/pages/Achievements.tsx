@@ -45,8 +45,8 @@ export default function Achievements() {
       <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Sidebar />
         
-        <main className="flex-1 ml-60 relative overflow-y-auto custom-scrollbar">
-          <div className="max-w-6xl mx-auto p-12">
+        <main className="flex-1 md:ml-60 relative overflow-y-auto custom-scrollbar pt-24 md:pt-0">
+          <div className="max-w-5xl mx-auto p-6 md:p-12">
             
             <header className="mb-12">
               <h1 className="text-4xl font-medium mb-3 tracking-tight" style={{ color: 'var(--text-primary)' }}>

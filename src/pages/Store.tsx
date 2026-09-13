@@ -183,8 +183,8 @@ export default function Store() {
       <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Sidebar />
         
-        <main className="flex-1 ml-60 relative overflow-y-auto">
-          <div className="max-w-5xl mx-auto p-12">
+        <main className="flex-1 md:ml-60 relative overflow-y-auto pt-24 md:pt-0">
+          <div className="max-w-5xl mx-auto p-6 md:p-12">
             
             <div className="flex justify-between items-end border-b border-[var(--border)] pb-8 mb-8">
               <div>
@@ -202,7 +202,7 @@ export default function Store() {
             </div>
 
             {/* Tabs */}
-            <div className="flex space-x-8 border-b border-[var(--border)] mb-12">
+            <div className="flex space-x-6 md:space-x-8 border-b border-[var(--border)] mb-12 overflow-x-auto whitespace-nowrap scrollbar-hide pb-2">
               {(['soundscapes', 'titles', 'themes', 'provisions'] as Tab[]).map((tab) => (
                 <button
                   key={tab}

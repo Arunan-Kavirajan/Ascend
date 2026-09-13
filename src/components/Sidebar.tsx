@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { auth } from '../lib/firebase';
 import { logout } from '../lib/auth';
 import { useUser, getTodayString } from '../context/UserContext';
@@ -19,6 +20,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile } = useUser();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -43,19 +45,56 @@ export default function Sidebar() {
   const streakColor = isSecuredToday ? 'var(--accent-warm)' : 'var(--text-muted)';
 
   return (
-    <aside 
-      className="fixed left-0 top-0 h-full w-60 flex flex-col z-50 transition-colors border-r"
-      style={{
-        backgroundColor: 'var(--bg-secondary)',
-        borderColor: 'var(--border)'
-      }}
-    >
-      {/* Header section */}
-      <div className="p-8">
+    <>
+      {/* Mobile Top Bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[var(--bg-secondary)] border-b border-[var(--border)] z-40 flex items-center justify-between px-4">
         <div className="font-mono text-sm tracking-widest font-bold" style={{ color: 'var(--text-primary)' }}>
           [ A ] ASCEND
         </div>
+        <button 
+          onClick={() => setIsOpen(true)}
+          className="p-2 text-[var(--text-primary)] focus:outline-none"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
       </div>
+
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsOpen(false)}
+            className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+          />
+        )}
+      </AnimatePresence>
+
+      <aside 
+        className={`fixed left-0 top-0 h-full w-60 flex flex-col z-50 transition-transform duration-300 border-r ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        style={{
+          backgroundColor: 'var(--bg-secondary)',
+          borderColor: 'var(--border)'
+        }}
+      >
+        {/* Header section */}
+        <div className="p-8 flex justify-between items-center">
+          <div className="font-mono text-sm tracking-widest font-bold" style={{ color: 'var(--text-primary)' }}>
+            [ A ] ASCEND
+          </div>
+          <button 
+            className="md:hidden text-[var(--text-muted)] hover:text-white"
+            onClick={() => setIsOpen(false)}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
@@ -65,6 +104,7 @@ export default function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={() => setIsOpen(false)}
               className="relative flex items-center px-4 py-2.5 outline-none group transition-all duration-200"
             >
               {isActive && (
@@ -143,6 +183,7 @@ export default function Sidebar() {
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

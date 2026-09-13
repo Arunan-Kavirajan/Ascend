@@ -111,7 +111,7 @@ export default function Profile() {
     return (
       <div className="min-h-screen flex text-[var(--text-primary)]" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Sidebar />
-        <main className="flex-1 ml-60 flex items-center justify-center">
+        <main className="flex-1 md:ml-60 flex items-center justify-center">
           <div className="font-mono animate-pulse uppercase tracking-widest text-[var(--text-muted)]">
             Loading Dossier...
           </div>
@@ -124,7 +124,7 @@ export default function Profile() {
     return (
       <div className="min-h-screen flex text-[var(--text-primary)]" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Sidebar />
-        <main className="flex-1 ml-60 flex items-center justify-center flex-col">
+        <main className="flex-1 md:ml-60 flex items-center justify-center flex-col">
           <div className="font-mono text-xl mb-4 text-[var(--text-muted)]">404_ASCENDER_NOT_FOUND</div>
           <button onClick={() => navigate(-1)} className="font-mono text-sm underline hover:text-[var(--accent)]">
             RETURN TO PREVIOUS
@@ -165,8 +165,8 @@ export default function Profile() {
       <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Sidebar />
         
-        <main className="flex-1 ml-60 relative overflow-y-auto custom-scrollbar text-[var(--text-primary)]">
-          <div className="max-w-5xl mx-auto p-12">
+        <main className="flex-1 md:ml-60 relative overflow-y-auto custom-scrollbar text-[var(--text-primary)] pt-24 md:pt-0">
+          <div className="max-w-5xl mx-auto p-4 md:p-12">
             
             {!isSelf && (
               <button 
