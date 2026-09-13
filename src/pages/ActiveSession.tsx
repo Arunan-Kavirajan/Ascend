@@ -3,6 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSessions, type Task } from "../context/SessionContext";
 import { useUser } from "../context/UserContext";
+import AmbiencePlayer from "../components/AmbiencePlayer";
+import { AmbienceBackground } from "../components/AmbienceBackground";
+import { BreakOverlay } from "../components/BreakOverlay";
+import type { AmbienceType } from "../lib/ambience";
+
+const LONG_BREAK_INTERVAL = 4; // Every 4th pomodoro triggers a long break
+const LONG_BREAK_DURATION = 15 * 60; // 15 minutes in seconds
 
 export default function ActiveSession() {
   const { sessionId } = useParams();
@@ -11,9 +18,14 @@ export default function ActiveSession() {
   const { awardSession } = useUser();
   const session = sessionId ? getSession(sessionId) : undefined;
 
-  const [seconds, setSeconds] = useState(session?.timerMode === "pomodoro" ? 25 * 60 : 0);
+  // Derive durations from session (custom or default)
+  const focusDuration = session?.focusDuration ?? 25 * 60;
+  const breakDuration = session?.breakDuration ?? 5 * 60;
+
+  const [seconds, setSeconds] = useState(session?.timerMode === "pomodoro" ? focusDuration : 0);
   const [isRunning, setIsRunning] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
+  const [isLongBreak, setIsLongBreak] = useState(false);
   const [activeTask, setActiveTask] = useState(0);
   const [tasks, setTasks] = useState<Task[]>(session?.tasks ?? []);
   const [taskInput, setTaskInput] = useState("");
@@ -22,7 +34,12 @@ export default function ActiveSession() {
   const [completedPomodoros, setCompletedPomodoros] = useState(session?.completedPomodoros ?? 0);
   const [sessionCompleted, setSessionCompleted] = useState(false);
 
+  // Ambience
+  const [activeAmbience, setActiveAmbience] = useState<AmbienceType | null>(null);
 
+  // Break Overlay
+  const [showBreakOverlay, setShowBreakOverlay] = useState(false);
+  const prevIsBreakRef = useRef(false);
 
   // Anti-Cheat: Random AFK Prompt
   const [showAfkPrompt, setShowAfkPrompt] = useState(false);
@@ -30,14 +47,41 @@ export default function ActiveSession() {
   const [showStrictWarning, setShowStrictWarning] = useState(false);
   const afkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Notifications permission
+  const notifRequested = useRef(false);
+
   const [sessionFocusTime, setSessionFocusTime] = useState(session?.totalFocusTime ?? 0);
 
   useEffect(() => {
     if (!session) return;
     setTasks(session.tasks);
     setCompletedPomodoros(session.completedPomodoros);
-    // Don't override sessionFocusTime continuously to avoid resetting active timer on snapshot updates
   }, [session?.id]);
+
+  // Request notification permission on first start
+  useEffect(() => {
+    if (isRunning && !notifRequested.current && "Notification" in window) {
+      notifRequested.current = true;
+      if (Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+  }, [isRunning]);
+
+  // Show break overlay when break starts
+  useEffect(() => {
+    if (isBreak && !prevIsBreakRef.current && session?.timerMode === "pomodoro") {
+      setShowBreakOverlay(true);
+    }
+    prevIsBreakRef.current = isBreak;
+  }, [isBreak, session?.timerMode]);
+
+  // Send notification helper
+  const sendNotification = (title: string, body: string) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(title, { body, icon: "/favicon.svg" });
+    }
+  };
 
   useEffect(() => {
     if (!isRunning || !session || sessionCompleted) return;
@@ -57,20 +101,33 @@ export default function ActiveSession() {
       setSeconds((prev) => {
         if (prev <= 1 && session.timerMode === "pomodoro") {
           setIsRunning(false);
-  
+
           if (isBreak) {
+            // Break ended → back to focus
             setIsBreak(false);
-            return 25 * 60;
+            setIsLongBreak(false);
+            sendNotification("Break's over!", "Let's get back to it! 🔥");
+            return focusDuration;
           }
-          setCompletedPomodoros((p) => p + 1);
+          // Focus ended → start break
+          const newPomoCount = completedPomodoros + 1;
+          setCompletedPomodoros(newPomoCount);
           setIsBreak(true);
-          return 5 * 60;
+
+          // Check for long break
+          if (newPomoCount > 0 && newPomoCount % LONG_BREAK_INTERVAL === 0) {
+            setIsLongBreak(true);
+            sendNotification("Long break time! 🧘", "You've earned a 15 minute rest. Grab some water!");
+            return LONG_BREAK_DURATION;
+          }
+          sendNotification("Time for a break! 🧘", "Take a moment to rest.");
+          return breakDuration;
         }
         return session.timerMode === "pomodoro" ? prev - 1 : prev + 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isRunning, isBreak, activeTask, tasks, session, sessionCompleted]);
+  }, [isRunning, isBreak, activeTask, tasks, session, sessionCompleted, focusDuration, breakDuration, completedPomodoros]);
 
   // Anti-Cheat: Passive Strict Mode
   useEffect(() => {
@@ -78,7 +135,6 @@ export default function ActiveSession() {
       if (document.hidden && isRunning && session?.isStrict) {
         setIsRunning(false);
         setShowStrictWarning(true);
-
         if (session) {
           updateSession(session.id, { tasks, totalFocusTime: sessionFocusTime, completedPomodoros });
         }
@@ -89,7 +145,6 @@ export default function ActiveSession() {
       if (isRunning && session?.isStrict) {
         setIsRunning(false);
         setShowStrictWarning(true);
-
         if (session) {
           updateSession(session.id, { tasks, totalFocusTime: sessionFocusTime, completedPomodoros });
         }
@@ -126,7 +181,6 @@ export default function ActiveSession() {
       const timer = setTimeout(() => {
         setShowAfkPrompt(false);
         setIsRunning(false);
-
         if (session) {
           updateSession(session.id, { tasks, totalFocusTime: sessionFocusTime, completedPomodoros });
         }
@@ -201,7 +255,8 @@ export default function ActiveSession() {
   const resetTimer = async () => {
     setIsRunning(false);
     setIsBreak(false);
-    setSeconds(session.timerMode === "pomodoro" ? 25 * 60 : 0);
+    setIsLongBreak(false);
+    setSeconds(session.timerMode === "pomodoro" ? focusDuration : 0);
     await updateSession(session.id, { tasks, totalFocusTime: sessionFocusTime, completedPomodoros });
   };
 
@@ -215,27 +270,35 @@ export default function ActiveSession() {
         const completedTasksCount = tasks.filter((task) => task.completed).length;
         report = await awardSession(totalFocusMinutes, completedTasksCount);
       }
-      
-      await updateSession(session.id, { 
-        tasks, 
-        status: "completed", 
+
+      await updateSession(session.id, {
+        tasks,
+        status: "completed",
         totalFocusTime: sessionFocusTime,
         completedPomodoros,
         ...(report && { report })
       });
     } catch (e) {
       console.error("Failed to end session properly", e);
-      // Fallback update so they at least get completion status
       await updateSession(session.id, { status: "completed", totalFocusTime: sessionFocusTime }).catch(console.error);
     }
-    
+
+    if (report) {
+      sendNotification("Session complete! 🎉", `You earned +${report.earnedAP} AP and +${report.earnedXP} XP`);
+    }
+
     setSessionCompleted(true);
   };
 
+  // Progress calculation using dynamic durations
+  const currentPhaseDuration = isBreak
+    ? (isLongBreak ? LONG_BREAK_DURATION : breakDuration)
+    : focusDuration;
+
   const progressPercentage = session.timerMode === "pomodoro"
-    ? ((isBreak ? 5 * 60 : 25 * 60) - seconds) / (isBreak ? 5 * 60 : 25 * 60) * 100
+    ? (currentPhaseDuration - seconds) / currentPhaseDuration * 100
     : 100;
-  
+
   const circleRadius = 160;
   const circleCircumference = 2 * Math.PI * circleRadius;
   const strokeDashoffset = session.timerMode === "pomodoro"
@@ -244,7 +307,7 @@ export default function ActiveSession() {
 
   if (sessionCompleted || session.status === "completed") {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center p-6"
       >
@@ -307,42 +370,57 @@ export default function ActiveSession() {
     );
   }
 
-  const phaseLabel = session.timerMode === "pomodoro" ? (isBreak ? "Break Phase" : "Focus Phase") : "Session Timer";
+  const phaseLabel = session.timerMode === "pomodoro"
+    ? (isBreak ? (isLongBreak ? "Long Break" : "Break Phase") : "Focus Phase")
+    : "Session Timer";
   const timerColor = "var(--text-primary)";
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col font-sans"
+      className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col font-sans relative"
     >
-      {/* AFK Prompt Overlay */}
-      <AnimatePresence>
-        {showStrictWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-[var(--bg-primary)] p-8 max-w-sm w-full border border-[var(--border)] text-center shadow-2xl">
-            <h3 className="text-xl mb-4 font-medium" style={{ color: 'var(--text-primary)' }}>Strict Mode Paused</h3>
-            <p className="mb-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Your timer was automatically paused because you switched tabs or applications while in Strict Mode.
-            </p>
-            <button
-              onClick={() => setShowStrictWarning(false)}
-              className="px-6 py-3 text-sm uppercase tracking-widest border transition-colors w-full cursor-pointer hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)]"
-              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-            >
-              I Understand
-            </button>
-          </div>
-        </div>
+      {/* Animated Ambience Background */}
+      <AmbienceBackground activeAmbience={activeAmbience} />
+
+      {/* Break Wellness Overlay */}
+      {session.timerMode === "pomodoro" && (
+        <BreakOverlay
+          isVisible={showBreakOverlay && isBreak}
+          isLongBreak={isLongBreak}
+          totalFocusMinutes={Math.floor(sessionFocusTime / 60)}
+          onDismiss={() => setShowBreakOverlay(false)}
+        />
       )}
 
-      {showAfkPrompt && (
+      {/* Modals */}
+      <AnimatePresence>
+        {showStrictWarning && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div className="bg-[var(--bg-primary)] p-8 max-w-sm w-full border border-[var(--border)] text-center shadow-2xl">
+              <h3 className="text-xl mb-4 font-medium" style={{ color: 'var(--text-primary)' }}>Strict Mode Paused</h3>
+              <p className="mb-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Your timer was automatically paused because you switched tabs or applications while in Strict Mode.
+              </p>
+              <button
+                onClick={() => setShowStrictWarning(false)}
+                className="px-6 py-3 text-sm uppercase tracking-widest border transition-colors w-full cursor-pointer hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)]"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showAfkPrompt && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
           >
             <div
               className="absolute bg-[var(--bg-secondary)] border border-[var(--border)] p-6 rounded-lg shadow-xl"
-              style={{ top: `${afkPosition.top}%`, left: `${afkPosition.left}%`, transform: 'translate(-50%, -50%)', position: 'absolute' }}
+              style={{ top: `${afkPosition.top}%`, left: `${afkPosition.left}%`, transform: 'translate(-50%, -50%)' }}
             >
               <p className="text-[var(--text-primary)] mb-4 text-center font-medium">Are you still focusing?</p>
               <button
@@ -356,16 +434,36 @@ export default function ActiveSession() {
         )}
       </AnimatePresence>
 
-      <header className="flex items-center justify-between p-8">
+      <header className="flex items-center justify-between p-8 relative z-10">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate("/sessions")} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           </button>
           <h1 className="text-xl font-normal tracking-wide">{session.name}</h1>
         </div>
+
+        {/* Pomodoro counter */}
+        {session.timerMode === "pomodoro" && (
+          <div className="flex items-center gap-2">
+            {Array.from({ length: LONG_BREAK_INTERVAL }).map((_, i) => (
+              <div
+                key={i}
+                className="w-2.5 h-2.5 rounded-full transition-colors"
+                style={{
+                  backgroundColor: i < (completedPomodoros % LONG_BREAK_INTERVAL)
+                    ? 'var(--accent)'
+                    : 'var(--border)'
+                }}
+              />
+            ))}
+            <span className="ml-2 text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+              {completedPomodoros} done
+            </span>
+          </div>
+        )}
       </header>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 px-8 pb-12">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 px-8 pb-12 relative z-10">
         {/* Left Column: Timer */}
         <div className="flex flex-col items-center justify-center relative">
           <div className="relative flex items-center justify-center w-full max-w-[400px] aspect-square">
@@ -381,17 +479,20 @@ export default function ActiveSession() {
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
               <p className="text-xs font-mono uppercase tracking-widest text-[var(--text-secondary)] mb-6">{phaseLabel}</p>
-              <div 
-                className="font-mono text-8xl font-light tracking-tighter text-[var(--text-primary)]"
-              >
+              <div className="font-mono text-8xl font-light tracking-tighter text-[var(--text-primary)]">
                 {timeString}
               </div>
               <div className="mt-8 h-12 flex flex-col items-center justify-center">
-                {tasks[activeTask] && (
+                {tasks[activeTask] && !isBreak && (
                   <>
                     <p className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] mb-1">Working On</p>
                     <p className="truncate max-w-[200px] text-sm text-[var(--text-secondary)]">{tasks[activeTask].title}</p>
                   </>
+                )}
+                {isBreak && (
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    {isLongBreak ? "💧 Take a long break & hydrate" : "☕ Short break"}
+                  </p>
                 )}
               </div>
             </div>
@@ -484,6 +585,12 @@ export default function ActiveSession() {
           </div>
         </div>
       </div>
+
+      {/* Ambience Player (floating bottom-right) */}
+      <AmbiencePlayer
+        isTimerRunning={isRunning}
+        onAmbienceChange={setActiveAmbience}
+      />
     </motion.div>
   );
 }

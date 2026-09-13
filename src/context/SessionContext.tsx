@@ -38,6 +38,8 @@ export type Session = {
   totalFocusTime: number;
   completedPomodoros: number;
   isStrict?: boolean;
+  focusDuration?: number;  // in seconds, default 1500 (25 min)
+  breakDuration?: number;  // in seconds, default 300 (5 min)
   report?: { earnedAP: number; earnedXP: number };
 };
 
@@ -47,7 +49,9 @@ type SessionContextType = {
   createSession: (
     name: string,
     timerMode: TimerMode,
-    isStrict?: boolean
+    isStrict?: boolean,
+    focusDuration?: number,
+    breakDuration?: number
   ) => Promise<Session>;
   updateSession: (
     id: string,
@@ -101,6 +105,8 @@ export function SessionProvider({
               totalFocusTime: data.totalFocusTime ?? 0,
               completedPomodoros: data.completedPomodoros ?? 0,
               isStrict: data.isStrict ?? false,
+              focusDuration: data.focusDuration,
+              breakDuration: data.breakDuration,
               report: data.report,
             };
           });
@@ -124,7 +130,9 @@ export function SessionProvider({
   const createSession = async (
     name: string,
     timerMode: TimerMode,
-    isStrict: boolean = false
+    isStrict: boolean = false,
+    focusDuration?: number,
+    breakDuration?: number
   ) => {
     const user = auth.currentUser;
 
@@ -141,6 +149,8 @@ export function SessionProvider({
       totalFocusTime: 0,
       completedPomodoros: 0,
       isStrict,
+      ...(focusDuration !== undefined && { focusDuration }),
+      ...(breakDuration !== undefined && { breakDuration }),
     };
 
     const sessionsRef = collection(
