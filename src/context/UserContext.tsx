@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, increment } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -482,14 +482,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateFocusStatus = async (isFocusing: boolean) => {
-    if (!profile) return;
+  const updateFocusStatus = useCallback(async (isFocusing: boolean) => {
+    const user = auth.currentUser;
+    if (!user) return;
     try {
-      await updateDoc(doc(db, 'users', profile.uid), { isFocusing });
+      await updateDoc(doc(db, 'users', user.uid), { isFocusing });
     } catch (e) {
       console.error(e);
     }
-  };
+  }, []);
 
   return (
     <UserContext.Provider value={{ profile, loading, awardSession, purchaseItem, equipItem, unequipItem, claimAchievement, claimTierMastery, updateProfileDetails, rerollQuest, updateFocusStatus }}>

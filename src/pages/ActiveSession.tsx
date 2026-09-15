@@ -59,18 +59,22 @@ export default function ActiveSession() {
   }, [session?.id]);
 
   const { updateFocusStatus } = useUser();
+  const lastFocusStatus = useRef<boolean | null>(null);
   
   useEffect(() => {
-    // Only mark as focusing if the timer is actually running AND we are not on a break.
-    // If we want breaks to count as "in a session", we can just use `isRunning`.
-    // Let's use `isRunning` so friends know they are in a session.
-    updateFocusStatus(isRunning);
-    
-    return () => {
-      // Cleanup: if they leave the page entirely, mark as false.
-      updateFocusStatus(false);
+    // Only update if it actually changed to prevent Firestore write spam
+    if (lastFocusStatus.current !== isRunning) {
+      updateFocusStatus(isRunning);
+      lastFocusStatus.current = isRunning;
     }
   }, [isRunning, updateFocusStatus]);
+
+  // Dedicated cleanup effect for when the component unmounts
+  useEffect(() => {
+    return () => {
+      updateFocusStatus(false);
+    };
+  }, [updateFocusStatus]);
 
   // Request notification permission on first start
   useEffect(() => {
